@@ -259,12 +259,18 @@ import tempfile
 
 # Configure Tesseract path for Windows
 def configure_tesseract():
-    """Configure Tesseract OCR path for Windows"""
+    """Configure Tesseract OCR path for Windows and Railway"""
     try:
         # Check if running on Railway (cloud platform)
         if os.environ.get('RAILWAY_ENVIRONMENT'):
-            print("❌ Tesseract not available on Railway cloud platform.")
-            return False
+            # On Railway, tesseract should be installed via nixpacks.toml
+            try:
+                pytesseract.get_tesseract_version()
+                print("✅ Tesseract found on Railway")
+                return True
+            except Exception:
+                print("❌ Tesseract not available on Railway. Check nixpacks.toml")
+                return False
 
         # Try common installation paths
         possible_paths = [
