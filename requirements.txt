@@ -5,6 +5,7 @@ twilio
 kivy
 requests
 werkzeug
-pytesseract
-pillow
+Pillow
 gunicorn
+opencv-python
+easyocr

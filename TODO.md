@@ -12,3 +12,14 @@
 - [x] Test parent registration with email
 - [x] Test notification sending to both email and mobile
 - [x] Handle database schema change (adding email column)
+
+# TODO: Replace Tesseract OCR with EasyOCR
+
+## Steps to Complete
+
+- [x] Replace pytesseract import with easyocr in app.py
+- [x] Update OCR configuration function to use easyocr.Reader
+- [x] Modify upload_attendance route to use easyocr for text extraction
+- [x] Remove pytesseract from requirements.txt
+- [x] Remove tesseract packages from nixpacks.toml
+- [x] Update OCR availability checks

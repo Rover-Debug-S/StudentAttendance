@@ -80,7 +80,7 @@ def parent_dashboard():
     return render_template('parent_dashboard.html', attendances=attendances)
 
 # SMS Configuration - FREE & EASY Alternatives (No Age Restrictions!)
-SMS_METHOD = 'console'  # Options: console, email, file
+SMS_METHOD = 'email'  # Options: console, email, file
 
 # For console mode (FREE - just prints to terminal)
 # For email mode (FREE - uses your email)
@@ -253,54 +253,25 @@ def delete_section(section_id):
     db.session.commit()
     return redirect(url_for('host_dashboard'))
 
-import pytesseract
+import easyocr
 from PIL import Image
 import tempfile
 
-# Configure Tesseract path for Windows
-def configure_tesseract():
-    """Configure Tesseract OCR path for Windows and Railway"""
+# Configure OCR for Windows and Railway
+def configure_ocr():
+    """Configure OCR for Windows and Railway using EasyOCR"""
     try:
-        # Check if running on Railway (cloud platform)
-        if os.environ.get('RAILWAY_ENVIRONMENT'):
-            # On Railway, tesseract should be installed via nixpacks.toml
-            try:
-                pytesseract.get_tesseract_version()
-                print("✅ Tesseract found on Railway")
-                return True
-            except Exception:
-                print("❌ Tesseract not available on Railway. Check nixpacks.toml")
-                return False
-
-        # Try common installation paths
-        possible_paths = [
-            r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-            r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
-            r'C:\Users\Windows 10\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
-        ]
-
-        for path in possible_paths:
-            if os.path.exists(path):
-                pytesseract.pytesseract.tesseract_cmd = path
-                print(f"✅ Tesseract found at: {path}")
-                return True
-
-        # If not found in common paths, try to use from PATH
-        try:
-            pytesseract.get_tesseract_version()
-            print("✅ Tesseract found in PATH")
-            return True
-        except Exception:
-            print("❌ Tesseract not found. Please install Tesseract OCR.")
-            print("📖 See TESSERACT_INSTALL_GUIDE.md for installation instructions.")
-            return False
-
+        # EasyOCR works on both Windows and Railway without system dependencies
+        reader = easyocr.Reader(['en'])
+        print("✅ EasyOCR initialized successfully")
+        return reader
     except Exception as e:
-        print(f"❌ Tesseract configuration error: {e}")
-        return False
+        print(f"❌ OCR configuration error: {e}")
+        return None
 
-# Initialize Tesseract
-TESSERACT_AVAILABLE = configure_tesseract()
+# Initialize OCR
+OCR_READER = configure_ocr()
+OCR_AVAILABLE = OCR_READER is not None
 
 @app.route('/mark_attendance', methods=['GET', 'POST'])
 @login_required
@@ -347,8 +318,8 @@ def upload_attendance():
     if current_user.role != 'host':
         return redirect(url_for('login'))
 
-    if not TESSERACT_AVAILABLE:
-        flash('Tesseract OCR is not installed. Please install it to use image-based attendance marking. See TESSERACT_INSTALL_GUIDE.md for instructions.')
+    if not OCR_AVAILABLE:
+        flash('OCR is not available. Please check the installation.')
         return redirect(url_for('host_dashboard'))
 
     if request.method == 'POST':
@@ -382,9 +353,9 @@ def upload_attendance():
                     # Apply threshold to get better contrast
                     _, threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-                    # Perform OCR with better configuration
-                    custom_config = r'--oem 3 --psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789. '
-                    text = pytesseract.image_to_string(threshold, config=custom_config)
+                    # Perform OCR using EasyOCR
+                    text_results = OCR_READER.readtext(threshold, detail=0)
+                    text = ' '.join(text_results)
 
                 # Enhanced name extraction and cleaning
                 recognized_names = set()
