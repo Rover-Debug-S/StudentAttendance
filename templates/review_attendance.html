@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Review Attendance - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Review Attendance for {{ date }}</h1>
+<p>Auto-detected students: {{ detected_names|join(', ') }}</p>
+<form method="POST" class="card p-4">
+    <input type="hidden" name="date" value="{{ date }}">
+    {% for student in students %}
+    <div class="mb-3">
+        <label class="form-label">{{ student.name }} (Grade {{ student.grade_level }}, {{ student.section.name if student.section else 'No Section' }}):</label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="status_{{ student.id }}" value="present" {% if student.id in detected_student_ids %}checked{% endif %}>
+            <label class="form-check-label">Present</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="status_{{ student.id }}" value="absent" {% if student.id not in detected_student_ids %}checked{% endif %}>
+            <label class="form-check-label">Absent</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="status_{{ student.id }}" value="tardy">
+            <label class="form-check-label">Tardy</label>
+        </div>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Save Attendance</button>
+    <a href="{{ url_for('upload_attendance') }}" class="btn btn-secondary">Upload Another Image</a>
+    <a href="{{ url_for('host_dashboard') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Parent Registration - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Parent Registration</h1>
+<form method="POST" id="parent-register-form">
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required><br>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required><br>
+    <label for="confirm_password">Confirm Password:</label>
+    <input type="password" id="confirm_password" name="confirm_password" required><br>
+    <label for="student_name">Child's Name:</label>
+    <input type="text" id="student_name" name="student_name" autocomplete="off" required>
+    <div id="student_suggestions" style="border: 1px solid #ccc; max-height: 150px; overflow-y: auto;"></div>
+    <input type="hidden" id="student_id" name="student_id" required>
+    <br>
+    <label for="mobile">Mobile Number:</label>
+    <input type="text" id="mobile" name="mobile" required><br>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required><br>
+    <button type="submit">Register</button>
+</form>
+
+<script>
+document.getElementById('student_name').addEventListener('input', function() {
+    const query = this.value;
+    const suggestions = document.getElementById('student_suggestions');
+    const studentIdInput = document.getElementById('student_id');
+    studentIdInput.value = '';
+    if (query.length < 2) {
+        suggestions.innerHTML = '';
+        return;
+    }
+    fetch(`/api/search_students?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            suggestions.innerHTML = '';
+            data.forEach(student => {
+                const div = document.createElement('div');
+                div.textContent = `${student.name} (Grade ${student.grade_level}, Section ${student.section_name})`;
+                div.style.cursor = 'pointer';
+                div.addEventListener('click', () => {
+                    document.getElementById('student_name').value = student.name;
+                    studentIdInput.value = student.id;
+                    suggestions.innerHTML = '';
+                });
+                suggestions.appendChild(div);
+            });
+        });
+});
+</script>
+{% endblock %}

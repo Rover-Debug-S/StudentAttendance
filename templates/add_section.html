@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Add Section - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Add Section</h1>
+<form method="POST" class="card p-4">
+    <div class="mb-3">
+        <label for="name" class="form-label">Section Name:</label>
+        <input type="text" id="name" name="name" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="grade_level" class="form-label">Grade Level:</label>
+        <select id="grade_level" name="grade_level" class="form-control" required>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Add</button>
+    <a href="{{ url_for('host_dashboard') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

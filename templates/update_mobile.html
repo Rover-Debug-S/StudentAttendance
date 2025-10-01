@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Update Mobile - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Update Mobile Number</h1>
+<form method="POST">
+    <label for="mobile">Mobile Number:</label>
+    <input type="text" id="mobile" name="mobile" value="{{ parent.mobile }}" required><br>
+    <button type="submit">Update</button>
+</form>
+<a href="{{ url_for('parent_dashboard') }}">Back to Dashboard</a>
+{% endblock %}

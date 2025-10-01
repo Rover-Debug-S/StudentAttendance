@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}View Attendance - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Attendance Records</h1>
+<form method="GET" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="student" class="form-label">Filter by Student:</label>
+            <select id="student" name="student" class="form-select">
+                <option value="">All Students</option>
+                {% for student in students %}
+                <option value="{{ student.id }}" {% if request.args.get('student') == student.id|string %}selected{% endif %}>{{ student.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="grade" class="form-label">Filter by Grade:</label>
+            <select id="grade" name="grade" class="form-select">
+                <option value="">All Grades</option>
+                <option value="7" {% if request.args.get('grade') == '7' %}selected{% endif %}>7</option>
+                <option value="8" {% if request.args.get('grade') == '8' %}selected{% endif %}>8</option>
+                <option value="9" {% if request.args.get('grade') == '9' %}selected{% endif %}>9</option>
+                <option value="10" {% if request.args.get('grade') == '10' %}selected{% endif %}>10</option>
+                <option value="11" {% if request.args.get('grade') == '11' %}selected{% endif %}>11</option>
+                <option value="12" {% if request.args.get('grade') == '12' %}selected{% endif %}>12</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="section" class="form-label">Filter by Section:</label>
+            <select id="section" name="section" class="form-select">
+                <option value="">All Sections</option>
+                {% for section in sections %}
+                <option value="{{ section.id }}" {% if request.args.get('section') == section.id|string %}selected{% endif %}>{{ section.name }} (Grade {{ section.grade_level }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="status" class="form-label">Filter by Status:</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="present" {% if request.args.get('status') == 'present' %}selected{% endif %}>Present</option>
+                <option value="absent" {% if request.args.get('status') == 'absent' %}selected{% endif %}>Absent</option>
+                <option value="tardy" {% if request.args.get('status') == 'tardy' %}selected{% endif %}>Tardy</option>
+            </select>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-3">
+            <label for="date" class="form-label">Filter by Date:</label>
+            <input type="date" id="date" name="date" class="form-control" value="{{ request.args.get('date') }}">
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Filter</button>
+    <a href="{{ url_for('export_csv') }}" class="btn btn-success mt-3">Export to CSV</a>
+</form>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Student Name</th>
+            <th>Date</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for attendance in attendances %}
+        <tr>
+            <td>{{ attendance.student.name }}</td>
+            <td>{{ attendance.date }}</td>
+            <td>{{ attendance.status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Review Attendance - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Review Attendance for {{ date }}</h1>
+
+<!-- OCR Results Summary -->
+<div class="alert alert-info">
+    <h5>📊 OCR Recognition Results</h5>
+    <p><strong>Students Detected:</strong> {{ matched_students_count }} out of {{ all_students_count }}</p>
+    {% if detected_names %}
+    <p><strong>Recognized Names:</strong> {{ detected_names|join(', ') }}</p>
+    {% else %}
+    <p><strong>No names were automatically recognized.</strong> Please mark attendance manually.</p>
+    {% endif %}
+</div>
+
+<!-- Only show matched students or all if none matched -->
+{% if matched_students_count > 0 %}
+<div class="alert alert-success">
+    <h6>✅ Auto-detected Students ({{ matched_students_count }})</h6>
+    <p>These students were found in the uploaded image. Review and adjust their attendance status as needed.</p>
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <h6>⚠️ No Students Auto-detected</h6>
+    <p>No student names were recognized in the image. This could be due to:</p>
+    <ul>
+        <li>Image quality or clarity issues</li>
+        <li>Handwriting that's difficult to read</li>
+        <li>Names not matching exactly with student records</li>
+    </ul>
+    <p>Please mark attendance manually for all students.</p>
+</div>
+{% endif %}
+
+<form method="POST" class="card p-4">
+    <input type="hidden" name="date" value="{{ date }}">
+
+    {% for student in students %}
+    <div class="mb-3 border-bottom pb-2">
+        <label class="form-label fw-bold">
+            {{ student.name }}
+            <small class="text-muted">(Grade {{ student.grade_level }}, {{ student.section.name if student.section else 'No Section' }})</small>
+            {% if student.id in detected_student_ids %}
+            <span class="badge bg-success">✓ Detected</span>
+            {% endif %}
+        </label>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="status_{{ student.id }}" value="present" {% if student.id in detected_student_ids %}checked{% endif %}>
+            <label class="form-check-label">Present</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="status_{{ student.id }}" value="absent" {% if student.id not in detected_student_ids %}checked{% endif %}>
+            <label class="form-check-label">Absent</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="status_{{ student.id }}" value="tardy">
+            <label class="form-check-label">Tardy</label>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">💾 Save Attendance</button>
+        <a href="{{ url_for('upload_attendance') }}" class="btn btn-secondary btn-lg">📤 Upload Another Image</a>
+        <a href="{{ url_for('host_dashboard') }}" class="btn btn-outline-secondary btn-lg">❌ Cancel</a>
+    </div>
+</form>
+
+<!-- Tips for better OCR -->
+<div class="mt-4 card p-3 bg-light">
+    <h6>💡 Tips for Better OCR Recognition:</h6>
+    <ul class="mb-0">
+        <li>Use clear, printed text rather than handwriting</li>
+        <li>Ensure good lighting and image quality</li>
+        <li>Write names on separate lines</li>
+        <li>Make sure student names in the system match the names in the image</li>
+    </ul>
+</div>
+{% endblock %}

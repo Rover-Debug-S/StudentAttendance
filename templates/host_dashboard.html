@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Host Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="text-primary">Host Dashboard</h1>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
+        </div>
+        <div class="alert alert-success">
+            <strong>Welcome, {{ current_user.username }}!</strong> Manage students and attendance here.
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow">
+            <div class="card-body">
+                <h5 class="card-title">Add Student</h5>
+                <p class="card-text">Add a new student to the system.</p>
+                <a href="{{ url_for('add_student') }}" class="btn btn-primary">Add Student</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow">
+            <div class="card-body">
+                <h5 class="card-title">Add Section</h5>
+                <p class="card-text">Add a new section to the system.</p>
+                <a href="{{ url_for('add_section') }}" class="btn btn-secondary">Add Section</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow">
+            <div class="card-body">
+                <h5 class="card-title">Mark Attendance</h5>
+                <p class="card-text">Record attendance manually.</p>
+                <a href="{{ url_for('mark_attendance') }}" class="btn btn-success">Mark Attendance</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow">
+            <div class="card-body">
+                <h5 class="card-title">OCR Attendance</h5>
+                <p class="card-text">Upload image for auto attendance marking.</p>
+                <a href="{{ url_for('upload_attendance') }}" class="btn btn-warning">Upload Image</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow">
+            <div class="card-body">
+                <h5 class="card-title">View Attendance</h5>
+                <p class="card-text">View and filter attendance records.</p>
+                <a href="{{ url_for('view_attendance') }}" class="btn btn-info">View Attendance</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow">
+            <div class="card-body">
+                <h5 class="card-title">Attendance Report</h5>
+                <p class="card-text">Generate attendance reports.</p>
+                <a href="{{ url_for('attendance_report') }}" class="btn btn-warning">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Students List</h5>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Grade</th>
+                                <th>Section</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.grade_level }}</td>
+                                <td>{{ student.section.name }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a href="{{ url_for('delete_student', student_id=student.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No students added yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Sections List</h5>
+            </div>
+            <div class="card-body">
+                {% if sections %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Grade Level</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for section in sections %}
+                            <tr>
+                                <td>{{ section.name }}</td>
+                                <td>{{ section.grade_level }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_section', section_id=section.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <a href="{{ url_for('delete_section', section_id=section.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure?')">Delete</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No sections added yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

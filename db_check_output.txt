@@ -1,0 +1,5 @@
+Database path: C:\Users\Windows 10\Desktop\StudentAttendanceSystem\attendance.db
+Database exists: True
+Number of users: 2
+User: host, Role: host
+User: Maricel B. Lusica, Role: parent

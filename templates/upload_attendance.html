@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Upload Attendance Image - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Upload Attendance Image</h1>
+<form method="POST" enctype="multipart/form-data" class="card p-4">
+    <div class="mb-3">
+        <label for="date" class="form-label">Date:</label>
+        <input type="date" id="date" name="date" class="form-control" required>
+    </div>
+    <div class="mb-3">
+        <label for="attendance_image" class="form-label">Attendance Image:</label>
+        <input type="file" id="attendance_image" name="attendance_image" accept="image/*" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Upload and Process</button>
+    <a href="{{ url_for('host_dashboard') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

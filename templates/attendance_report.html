@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Attendance Report - Student Attendance System{% endblock %}
+{% block content %}
+<h1>Attendance Report</h1>
+<form method="GET" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="grade" class="form-label">Filter by Grade:</label>
+            <select id="grade" name="grade" class="form-select">
+                <option value="">All Grades</option>
+                <option value="7" {% if request.args.get('grade') == '7' %}selected{% endif %}>7</option>
+                <option value="8" {% if request.args.get('grade') == '8' %}selected{% endif %}>8</option>
+                <option value="9" {% if request.args.get('grade') == '9' %}selected{% endif %}>9</option>
+                <option value="10" {% if request.args.get('grade') == '10' %}selected{% endif %}>10</option>
+                <option value="11" {% if request.args.get('grade') == '11' %}selected{% endif %}>11</option>
+                <option value="12" {% if request.args.get('grade') == '12' %}selected{% endif %}>12</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="section" class="form-label">Filter by Section:</label>
+            <select id="section" name="section" class="form-select">
+                <option value="">All Sections</option>
+                {% for section in sections %}
+                <option value="{{ section.id }}" {% if request.args.get('section') == section.id|string %}selected{% endif %}>{{ section.name }} (Grade {{ section.grade_level }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Filter</button>
+</form>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Student Name</th>
+            <th>Total Days</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Tardy</th>
+            <th>Attendance Percentage</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for data in report_data %}
+        <tr>
+            <td>{{ data.name }}</td>
+            <td>{{ data.total }}</td>
+            <td>{{ data.present }}</td>
+            <td>{{ data.absent }}</td>
+            <td>{{ data.tardy }}</td>
+            <td>{{ data.percentage }}%</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<canvas id="attendanceChart" width="400" height="200"></canvas>
+{% endblock %}
+{% block scripts %}
+<script>
+    const reportData = {{ report_data | tojson }};
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const data = {
+        labels: reportData.map(d => d.name),
+        datasets: [{
+            label: 'Attendance Percentage',
+            data: reportData.map(d => d.percentage),
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    };
+    const config = {
+        type: 'bar',
+        data: data,
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    };
+    new Chart(ctx, config);
+</script>
+{% endblock %}
