@@ -257,21 +257,23 @@ import easyocr
 from PIL import Image
 import tempfile
 
-# Configure OCR for Windows and Railway
-def configure_ocr():
-    """Configure OCR for Windows and Railway using EasyOCR"""
-    try:
-        # EasyOCR works on both Windows and Railway without system dependencies
-        reader = easyocr.Reader(['en'])
-        print("✅ EasyOCR initialized successfully")
-        return reader
-    except Exception as e:
-        print(f"❌ OCR configuration error: {e}")
-        return None
+# Lazy loading for OCR to avoid Railway build timeouts
+OCR_READER = None
+OCR_AVAILABLE = False
 
-# Initialize OCR
-OCR_READER = configure_ocr()
-OCR_AVAILABLE = OCR_READER is not None
+def get_ocr_reader():
+    """Lazy load OCR reader only when needed"""
+    global OCR_READER, OCR_AVAILABLE
+    if OCR_READER is None:
+        try:
+            print("🔄 Initializing EasyOCR reader...")
+            OCR_READER = easyocr.Reader(['en'])
+            OCR_AVAILABLE = True
+            print("✅ EasyOCR initialized successfully")
+        except Exception as e:
+            print(f"❌ OCR configuration error: {e}")
+            OCR_AVAILABLE = False
+    return OCR_READER
 
 @app.route('/mark_attendance', methods=['GET', 'POST'])
 @login_required
@@ -318,7 +320,9 @@ def upload_attendance():
     if current_user.role != 'host':
         return redirect(url_for('login'))
 
-    if not OCR_AVAILABLE:
+    # Get OCR reader lazily (only when needed)
+    ocr_reader = get_ocr_reader()
+    if not ocr_reader:
         flash('OCR is not available. Please check the installation.')
         return redirect(url_for('host_dashboard'))
 
@@ -354,7 +358,7 @@ def upload_attendance():
                     _, threshold = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
                     # Perform OCR using EasyOCR
-                    text_results = OCR_READER.readtext(threshold, detail=0)
+                    text_results = ocr_reader.readtext(threshold, detail=0)
                     text = ' '.join(text_results)
 
                 # Enhanced name extraction and cleaning
