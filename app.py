@@ -261,6 +261,11 @@ import tempfile
 def configure_tesseract():
     """Configure Tesseract OCR path for Windows"""
     try:
+        # Check if running on Railway (cloud platform)
+        if os.environ.get('RAILWAY_ENVIRONMENT'):
+            print("❌ Tesseract not available on Railway cloud platform.")
+            return False
+
         # Try common installation paths
         possible_paths = [
             r'C:\Program Files\Tesseract-OCR\tesseract.exe',
@@ -299,7 +304,7 @@ def mark_attendance():
     if request.method == 'POST':
         date_str = request.form['date']
         date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        students = Student.query.options(joinedload(Student.parents)).all()
+        students = Student.query.all()
         for student in students:
             status = request.form.get(f'status_{student.id}', 'absent')
             # Check if attendance record already exists for this student and date
@@ -316,12 +321,16 @@ def mark_attendance():
             flash(f'Error saving attendance: {str(e)}')
             return redirect(url_for('host_dashboard'))
         # Send SMS notification to parents using the configured method
+        notification_count = 0
         for student in students:
-            for parent in student.parents:
-                if parent.role == 'parent' and (parent.mobile or parent.email):
+            parents = User.query.filter_by(student_id=student.id, role='parent').all()
+            for parent in parents:
+                if parent.mobile or parent.email:
                     status = request.form.get(f'status_{student.id}', 'absent')
                     message = f"{student.name} is {status} on {date}"
-                    send_notification(parent.mobile, parent.email, message)
+                    if send_notification(parent.mobile, parent.email, message):
+                        notification_count += 1
+        flash(f'Attendance marked successfully. Notifications sent to {notification_count} parents.')
         return redirect(url_for('host_dashboard'))
     students = Student.query.all()
     return render_template('mark_attendance.html', students=students)
