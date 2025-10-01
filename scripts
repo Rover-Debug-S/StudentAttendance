@@ -1,0 +1,10 @@
+@echo off
+REM Change directory to the script's directory
+pushd "%~dp0"
+git add .
+echo Enter commit message (press Enter when done):
+set /p commitmsg=
+git commit -m "%commitmsg%"
+git push origin main
+popd
+pause

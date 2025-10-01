@@ -17,6 +17,8 @@
                 <h5 class="card-title">Student Information</h5>
                 <p class="card-text"><strong>Student Name:</strong> {{ current_user.student.name }}</p>
                 <p class="card-text"><strong>Mobile:</strong> {{ current_user.mobile or 'Not provided' }}</p>
+                <p class="card-text"><strong>Email:</strong> {{ current_user.email or 'Not provided' }}</p>
+                <a href="{{ url_for('update_contact') }}" class="btn btn-primary btn-sm">Update Contact Info</a>
             </div>
         </div>
     </div>

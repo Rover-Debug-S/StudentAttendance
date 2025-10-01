@@ -1,4 +1,4 @@
-    from flask import Flask, render_template, request, redirect, url_for, Response, flash
+from flask import Flask, render_template, request, redirect, url_for, Response, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime
 from db import db
@@ -647,7 +647,8 @@ def api_parent_dashboard(user_id):
         return {'error': 'User not found'}, 404
     return {
         'student_name': user.student.name,
-        'mobile': user.mobile
+        'mobile': user.mobile,
+        'email': user.email
     }, 200
 
 @app.route('/api/update_mobile/<int:user_id>', methods=['POST'])
@@ -741,14 +742,14 @@ def create_default_data():
     # Create parents
     if User.query.filter_by(role='parent').count() == 0:
         parents_data = [
-            ('parent1', 'parent123', 1, '09123456789'),
-            ('parent2', 'parent123', 2, '09123456790'),
-            ('parent3', 'parent123', 3, '09123456791'),
-            ('parent4', 'parent123', 4, '09123456792')
+            ('parent1', 'parent123', 1, '09123456789', 'parent1@example.com'),
+            ('parent2', 'parent123', 2, '09123456790', 'parent2@example.com'),
+            ('parent3', 'parent123', 3, '09123456791', 'parent3@example.com'),
+            ('parent4', 'parent123', 4, '09123456792', 'parent4@example.com')
         ]
-        for username, password, student_id, mobile in parents_data:
+        for username, password, student_id, mobile, email in parents_data:
             hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-            parent = User(username=username, password=hashed_password, role='parent', student_id=student_id, mobile=mobile)
+            parent = User(username=username, password=hashed_password, role='parent', student_id=student_id, mobile=mobile, email=email)
             db.session.add(parent)
         db.session.commit()
 
