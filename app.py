@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, Response, flash
+    from flask import Flask, render_template, request, redirect, url_for, Response, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from datetime import datetime
 from db import db
@@ -81,7 +81,7 @@ def parent_dashboard():
     return render_template('parent_dashboard.html', attendances=attendances)
 
 # SMS Configuration - FREE & EASY Alternatives (No Age Restrictions!)
-SMS_METHOD = 'email'  # Options: console, email, file
+SMS_METHOD = 'console'  # Options: console, email, file
 
 # For console mode (FREE - just prints to terminal)
 # For email mode (FREE - uses your email)
