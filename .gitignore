@@ -1,0 +1,23 @@
+# Ignore stray files that should not be pushed to GitHub
+hing to GitHub...
+s any key to exit...
+will add all changes, commit them, and push to GitHub.
+# Ignore junk or stray files accidentally created
+hing to GitHub...
+s any key to exit...
+will add all changes, commit them, and push to GitHub.
+
+# Ignore Python cache, environments, and local stuff
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+instance/
+attendance.db
+
+# Ignore build and OS files
+*.log
+.DS_Store
+Thumbs.db
