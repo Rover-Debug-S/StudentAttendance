@@ -495,4 +495,4 @@ def view_attendance():
         section_student_ids = [s.id for s in section_students]
         query = query.filter(Attendance.student_id.in_(section_student_ids))
     if request.args.get('date'):
-        query = query.filter_by(date=request.args.get('date
+        query = query.filter_by(date=request.args.get('date'))
