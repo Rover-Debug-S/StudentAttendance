@@ -392,5 +392,67 @@ def attendance_report():
     sections = Section.query.all()
     return render_template('attendance_report.html', report_data=report_data, sections=sections)
 
+@app.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
+@login_required
+def edit_student(student_id):
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    student = Student.query.get_or_404(student_id)
+    if request.method == 'POST':
+        student.name = request.form['name']
+        student.grade_level = int(request.form['grade_level'])
+        student.section_id = int(request.form['section_id'])
+        db.session.commit()
+        return redirect(url_for('host_dashboard'))
+    sections = Section.query.all()
+    return render_template('edit_student.html', student=student, sections=sections)
+
+@app.route('/delete_student/<int:student_id>', methods=['POST', 'GET'])
+@login_required
+def delete_student(student_id):
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    student = Student.query.get_or_404(student_id)
+    db.session.delete(student)
+    db.session.commit()
+    return redirect(url_for('host_dashboard'))
+
+@app.route('/add_section', methods=['GET', 'POST'])
+@login_required
+def add_section():
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        name = request.form['name']
+        grade_level = int(request.form['grade_level'])
+        new_section = Section(name=name, grade_level=grade_level)
+        db.session.add(new_section)
+        db.session.commit()
+        return redirect(url_for('host_dashboard'))
+    return render_template('add_section.html')
+
+@app.route('/edit_section/<int:section_id>', methods=['GET', 'POST'])
+@login_required
+def edit_section(section_id):
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    section = Section.query.get_or_404(section_id)
+    if request.method == 'POST':
+        section.name = request.form['name']
+        section.grade_level = int(request.form['grade_level'])
+        db.session.commit()
+        return redirect(url_for('host_dashboard'))
+    return render_template('edit_section.html', section=section)
+
+@app.route('/delete_section/<int:section_id>', methods=['POST', 'GET'])
+@login_required
+def delete_section(section_id):
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    section = Section.query.get_or_404(section_id)
+    db.session.delete(section)
+    db.session.commit()
+    return redirect(url_for('host_dashboard'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
