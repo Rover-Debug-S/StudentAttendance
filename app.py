@@ -43,6 +43,12 @@ from models import Student, Attendance, User, Section
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Create database tables and default data when app starts
+with app.app_context():
+    db.create_all()
+    create_default_data()
+    create_default_host()
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -301,8 +307,4 @@ def create_default_data():
         db.session.commit()
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        create_default_data()  # Uncommented to create default data
-        create_default_host()  # Uncommented to create default host
     app.run(host='0.0.0.0', port=5000, debug=True)
