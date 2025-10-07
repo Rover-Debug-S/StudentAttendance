@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, Response, flash
-from flask_login import LoginManager, login_required, logout_user, current_user
+from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from datetime import datetime
 from db import db
 import csv
