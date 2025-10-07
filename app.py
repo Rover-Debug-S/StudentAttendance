@@ -43,6 +43,8 @@ from models import Student, Attendance, User, Section
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
+
 # Create database tables and default data when app starts
 with app.app_context():
     db.create_all()
@@ -261,50 +263,7 @@ def upload_attendance():
                     send_notification(parent, message)
     return redirect(url_for('host_dashboard'))
 
-def create_default_host():
-    host = User.query.filter_by(username='host').first()
-    if not host:
-        hashed_password = generate_password_hash('host123', method='pbkdf2:sha256')
-        host = User(username='host', password=hashed_password, role='host')
-        db.session.add(host)
-        db.session.commit()
 
-def create_default_data():
-    """Create default students, sections, and parents for testing"""
-    # Create sections
-    if Section.query.count() == 0:
-        section1 = Section(name='A', grade_level=1)
-        section2 = Section(name='B', grade_level=1)
-        db.session.add(section1)
-        db.session.add(section2)
-        db.session.commit()
-
-    # Create students
-    if Student.query.count() == 0:
-        students_data = [
-            ('John Doe', 1, 1),
-            ('Jane Smith', 1, 1),
-            ('Bob Johnson', 1, 2),
-            ('Alice Brown', 1, 2)
-        ]
-        for name, grade, section_id in students_data:
-            student = Student(name=name, grade_level=grade, section_id=section_id)
-            db.session.add(student)
-        db.session.commit()
-
-    # Create parents
-    if User.query.filter_by(role='parent').count() == 0:
-        parents_data = [
-            ('parent1', 'parent123', 1, '09123456789', 'parent1@example.com'),
-            ('parent2', 'parent123', 2, '09123456790', 'parent2@example.com'),
-            ('parent3', 'parent123', 3, '09123456791', 'parent3@example.com'),
-            ('parent4', 'parent123', 4, '09123456792', 'parent4@example.com')
-        ]
-        for username, password, student_id, mobile, email in parents_data:
-            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-            parent = User(username=username, password=hashed_password, role='parent', student_id=student_id, mobile=mobile, email=email)
-            db.session.add(parent)
-        db.session.commit()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
