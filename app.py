@@ -43,6 +43,10 @@ from models import Student, Attendance, User, Section
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
