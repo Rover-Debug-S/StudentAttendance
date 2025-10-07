@@ -321,7 +321,76 @@ def upload_attendance():
                     send_notification(parent, message)
     return redirect(url_for('host_dashboard'))
 
+@app.route('/add_student', methods=['GET', 'POST'])
+@login_required
+def add_student():
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        name = request.form['name']
+        grade_level = int(request.form['grade_level'])
+        section_id = int(request.form['section_id'])
+        new_student = Student(name=name, grade_level=grade_level, section_id=section_id)
+        db.session.add(new_student)
+        db.session.commit()
+        return redirect(url_for('host_dashboard'))
+    sections = Section.query.all()
+    return render_template('add_student.html', sections=sections)
 
+@app.route('/view_attendance')
+@login_required
+def view_attendance():
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    query = Attendance.query
+    if request.args.get('student'):
+        query = query.filter_by(student_id=request.args.get('student'))
+    if request.args.get('grade'):
+        grade_students = Student.query.filter_by(grade_level=int(request.args.get('grade'))).all()
+        grade_student_ids = [s.id for s in grade_students]
+        query = query.filter(Attendance.student_id.in_(grade_student_ids))
+    if request.args.get('section'):
+        section_students = Student.query.filter_by(section_id=int(request.args.get('section'))).all()
+        section_student_ids = [s.id for s in section_students]
+        query = query.filter(Attendance.student_id.in_(section_student_ids))
+    if request.args.get('date'):
+        query = query.filter_by(date=request.args.get('date'))
+    if request.args.get('status'):
+        query = query.filter_by(status=request.args.get('status'))
+    attendances = query.all()
+    students = Student.query.all()
+    sections = Section.query.all()
+    return render_template('view_attendance.html', attendances=attendances, students=students, sections=sections)
+
+@app.route('/attendance_report')
+@login_required
+def attendance_report():
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    query = Student.query
+    if request.args.get('grade'):
+        query = query.filter_by(grade_level=int(request.args.get('grade')))
+    if request.args.get('section'):
+        query = query.filter_by(section_id=int(request.args.get('section')))
+    students = query.all()
+    report_data = []
+    for student in students:
+        attendances = Attendance.query.filter_by(student_id=student.id).all()
+        total_days = len(attendances)
+        present_days = len([a for a in attendances if a.status == 'present'])
+        absent_days = len([a for a in attendances if a.status == 'absent'])
+        tardy_days = len([a for a in attendances if a.status == 'tardy'])
+        percentage = (present_days / total_days * 100) if total_days > 0 else 0
+        report_data.append({
+            'name': student.name,
+            'total': total_days,
+            'present': present_days,
+            'absent': absent_days,
+            'tardy': tardy_days,
+            'percentage': round(percentage, 2)
+        })
+    sections = Section.query.all()
+    return render_template('attendance_report.html', report_data=report_data, sections=sections)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
