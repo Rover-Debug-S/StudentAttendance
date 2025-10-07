@@ -237,7 +237,7 @@ def send_sms_to_mobile(phone_number, message):
         msg['From'] = EMAIL_USER
         msg['To'] = sms_email
 
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)  # Add timeout
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
         server.sendmail(EMAIL_USER, sms_email, msg.as_string())
@@ -245,6 +245,9 @@ def send_sms_to_mobile(phone_number, message):
 
         print(f"✅ SMS sent successfully to {phone_number}")
         return True
+    except smtplib.SMTPException as e:
+        print(f"❌ SMTP error for SMS: {e}")
+        return False
     except Exception as e:
         print(f"❌ SMS failed: {e}")
         return False
@@ -257,7 +260,7 @@ def send_email_to_parent(email, message):
         msg['From'] = EMAIL_USER
         msg['To'] = email
 
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)  # Add timeout
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
         server.sendmail(EMAIL_USER, email, msg.as_string())
@@ -265,6 +268,9 @@ def send_email_to_parent(email, message):
 
         print(f"✅ Email sent successfully to {email}")
         return True
+    except smtplib.SMTPException as e:
+        print(f"❌ SMTP error for email: {e}")
+        return False
     except Exception as e:
         print(f"❌ Email failed: {e}")
         return False
@@ -292,13 +298,21 @@ def mark_attendance_page():
                 db.session.add(attendance)
         db.session.commit()
 
-        # Send notifications to parents
-        for student in students:
-            status = request.form.get(f'status_{student.id}', 'absent')
-            parents = User.query.filter_by(student_id=student.id, role='parent').all()
-            for parent in parents:
-                message = f"{student.name} is {status} on {date}"
-                send_notification(parent, message)
+        # Send notifications to parents (non-blocking)
+        try:
+            for student in students:
+                status = request.form.get(f'status_{student.id}', 'absent')
+                parents = User.query.filter_by(student_id=student.id, role='parent').all()
+                for parent in parents:
+                    message = f"{student.name} is {status} on {date}"
+                    try:
+                        send_notification(parent, message)
+                    except Exception as e:
+                        print(f"Failed to send notification to parent {parent.username}: {e}")
+                        # Continue processing other notifications
+        except Exception as e:
+            print(f"Error during notification sending: {e}")
+            # Don't let notification failures affect the attendance marking
 
         flash('Attendance marked successfully!')
         return redirect(url_for('host_dashboard'))
@@ -323,9 +337,18 @@ def mark_attendance(student_id):
 
     student = Student.query.get(student_id)
     parents = User.query.filter_by(student_id=student_id, role='parent').all()
-    for parent in parents:
-        message = f"{student.name} is {status} on {date}"
-        send_notification(parent, message)
+    # Send notifications to parents (non-blocking)
+    try:
+        for parent in parents:
+            message = f"{student.name} is {status} on {date}"
+            try:
+                send_notification(parent, message)
+            except Exception as e:
+                print(f"Failed to send notification to parent {parent.username}: {e}")
+                # Continue processing other notifications
+    except Exception as e:
+        print(f"Error during notification sending: {e}")
+        # Don't let notification failures affect the attendance marking
     return redirect(url_for('host_dashboard'))
 
 @app.route('/upload_attendance', methods=['POST'])
@@ -352,9 +375,18 @@ def upload_attendance():
                 db.session.commit()
 
                 parents = User.query.filter_by(student_id=student.id, role='parent').all()
-                for parent in parents:
-                    message = f"{student.name} is {status} on {date}"
-                    send_notification(parent, message)
+                # Send notifications to parents (non-blocking)
+                try:
+                    for parent in parents:
+                        message = f"{student.name} is {status} on {date}"
+                        try:
+                            send_notification(parent, message)
+                        except Exception as e:
+                            print(f"Failed to send notification to parent {parent.username}: {e}")
+                            # Continue processing other notifications
+                except Exception as e:
+                    print(f"Error during notification sending: {e}")
+                    # Don't let notification failures affect the attendance marking
     return redirect(url_for('host_dashboard'))
 
 @app.route('/add_student', methods=['GET', 'POST'])
@@ -397,6 +429,51 @@ def view_attendance():
     students = Student.query.all()
     sections = Section.query.all()
     return render_template('view_attendance.html', attendances=attendances, students=students, sections=sections)
+
+@app.route('/export_csv')
+@login_required
+def export_csv():
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    query = Attendance.query
+    if request.args.get('student'):
+        query = query.filter_by(student_id=request.args.get('student'))
+    if request.args.get('grade'):
+        grade_students = Student.query.filter_by(grade_level=int(request.args.get('grade'))).all()
+        grade_student_ids = [s.id for s in grade_students]
+        query = query.filter(Attendance.student_id.in_(grade_student_ids))
+    if request.args.get('section'):
+        section_students = Student.query.filter_by(section_id=int(request.args.get('section'))).all()
+        section_student_ids = [s.id for s in section_students]
+        query = query.filter(Attendance.student_id.in_(section_student_ids))
+    if request.args.get('date'):
+        query = query.filter_by(date=request.args.get('date'))
+    if request.args.get('status'):
+        query = query.filter_by(status=request.args.get('status'))
+    attendances = query.all()
+
+    # Create CSV response
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Student Name', 'Date', 'Status', 'Grade Level', 'Section'])
+
+    for attendance in attendances:
+        student = Student.query.get(attendance.student_id)
+        section = Section.query.get(student.section_id) if student else None
+        writer.writerow([
+            student.name if student else 'Unknown',
+            attendance.date.strftime('%Y-%m-%d'),
+            attendance.status,
+            student.grade_level if student else '',
+            section.name if section else ''
+        ])
+
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=attendance_export.csv'}
+    )
 
 @app.route('/attendance_report')
 @login_required

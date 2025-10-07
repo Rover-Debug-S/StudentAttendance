@@ -13,4 +13,5 @@
 - [x] Update parent_dashboard.html to show email and link to update contact
 - [ ] Test parent registration with email
 - [ ] Test notification sending to both email and mobile
-- [ ] Handle database schema change (adding email column)
+- [x] Handle database schema change (adding email column)
+- [x] Fix Railway deployment issues (explicit endpoint naming)
