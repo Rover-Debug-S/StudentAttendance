@@ -270,6 +270,42 @@ def send_email_to_parent(email, message):
         return False
 
 # Attendance marking routes with notifications
+@app.route('/mark_attendance', methods=['GET', 'POST'])
+@login_required
+def mark_attendance_page():
+    if current_user.role != 'host':
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        date_str = request.form.get('date')
+        if not date_str:
+            flash('Date is required')
+            return redirect(url_for('mark_attendance_page'))
+        date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        students = Student.query.all()
+        for student in students:
+            status = request.form.get(f'status_{student.id}', 'absent')
+            attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
+            if attendance:
+                attendance.status = status
+            else:
+                attendance = Attendance(student_id=student.id, date=date, status=status)
+                db.session.add(attendance)
+        db.session.commit()
+
+        # Send notifications to parents
+        for student in students:
+            status = request.form.get(f'status_{student.id}', 'absent')
+            parents = User.query.filter_by(student_id=student.id, role='parent').all()
+            for parent in parents:
+                message = f"{student.name} is {status} on {date}"
+                send_notification(parent, message)
+
+        flash('Attendance marked successfully!')
+        return redirect(url_for('host_dashboard'))
+
+    students = Student.query.all()
+    return render_template('mark_attendance.html', students=students)
+
 @app.route('/mark_attendance/<int:student_id>', methods=['POST'])
 @login_required
 def mark_attendance(student_id):
@@ -453,42 +489,6 @@ def delete_section(section_id):
     db.session.delete(section)
     db.session.commit()
     return redirect(url_for('host_dashboard'))
-
-@app.route('/mark_attendance', methods=['GET', 'POST'])
-@login_required
-def mark_attendance_page():
-    if current_user.role != 'host':
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        date_str = request.form.get('date')
-        if not date_str:
-            flash('Date is required')
-            return redirect(url_for('mark_attendance_page'))
-        date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        students = Student.query.all()
-        for student in students:
-            status = request.form.get(f'status_{student.id}', 'absent')
-            attendance = Attendance.query.filter_by(student_id=student.id, date=date).first()
-            if attendance:
-                attendance.status = status
-            else:
-                attendance = Attendance(student_id=student.id, date=date, status=status)
-                db.session.add(attendance)
-        db.session.commit()
-
-        # Send notifications to parents
-        for student in students:
-            status = request.form.get(f'status_{student.id}', 'absent')
-            parents = User.query.filter_by(student_id=student.id, role='parent').all()
-            for parent in parents:
-                message = f"{student.name} is {status} on {date}"
-                send_notification(parent, message)
-
-        flash('Attendance marked successfully!')
-        return redirect(url_for('host_dashboard'))
-
-    students = Student.query.all()
-    return render_template('mark_attendance.html', students=students)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
