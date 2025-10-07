@@ -270,7 +270,7 @@ def send_email_to_parent(email, message):
         return False
 
 # Attendance marking routes with notifications
-@app.route('/mark_attendance', methods=['GET', 'POST'])
+@app.route('/mark_attendance', methods=['GET', 'POST'], endpoint='mark_attendance')
 @login_required
 def mark_attendance_page():
     if current_user.role != 'host':
@@ -306,7 +306,7 @@ def mark_attendance_page():
     students = Student.query.all()
     return render_template('mark_attendance.html', students=students)
 
-@app.route('/mark_attendance/<int:student_id>', methods=['POST'])
+@app.route('/mark_attendance/<int:student_id>', methods=['POST'], endpoint='mark_single_attendance')
 @login_required
 def mark_attendance(student_id):
     if current_user.role != 'host':
