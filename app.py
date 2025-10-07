@@ -170,6 +170,21 @@ def parent_dashboard():
     attendances = Attendance.query.filter_by(student_id=current_user.student_id).all()
     return render_template('parent_dashboard.html', student=student, attendances=attendances)
 
+@app.route('/update_contact', methods=['GET', 'POST'])
+@login_required
+def update_contact():
+    if current_user.role != 'parent':
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        mobile = request.form['mobile']
+        email = request.form['email']
+        current_user.mobile = mobile
+        current_user.email = email
+        db.session.commit()
+        flash('Contact information updated successfully!')
+        return redirect(url_for('parent_dashboard'))
+    return render_template('update_contact.html', parent=current_user)
+
 @app.route('/api/search_students')
 def api_search_students():
     query = request.args.get('q', '')
