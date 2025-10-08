@@ -1,5 +1,5 @@
 [phases.setup]
-aptPkgs = ["libsqlite3-0", "libsqlite3-dev"]
+aptPkgs = ["sqlite3", "libsqlite3-0", "libsqlite3-dev"]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
