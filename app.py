@@ -90,9 +90,14 @@ def create_default_data():
 
 # Create database tables and default data when app starts
 with app.app_context():
-    db.create_all()
-    create_default_data()
-    create_default_host()
+    try:
+        db.create_all()
+        create_default_data()
+        create_default_host()
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"❌ Database initialization error: {e}")
+        print("This might be due to schema changes. Try deleting the attendance.db file and restarting.")
 
 @app.route('/')
 def index():
