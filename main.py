@@ -120,7 +120,7 @@ class RegisterScreen(Screen):
             return
 
         if not self.student_id:
-            print('Please select a student')
+            print('Please select a student from the suggestions')
             return
 
         response = requests.post(f'{BASE_URL}/api/parent_register', json={
@@ -130,6 +130,7 @@ class RegisterScreen(Screen):
             'student_id': self.student_id
         })
         if response.status_code == 201:
+            print('Registration successful')
             self.manager.current = 'login'
         else:
             print('Registration failed')
