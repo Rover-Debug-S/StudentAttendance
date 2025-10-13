@@ -1,1 +1,1 @@
-web: gunicorn wsgi:app
+web: bash install_packages.sh && gunicorn wsgi:app

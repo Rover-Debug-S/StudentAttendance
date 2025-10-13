@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, Response, flash
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
+from flask_cors import CORS
 from datetime import datetime
 from db import db
 import csv
@@ -17,6 +18,9 @@ EMAIL_PASS = 'wnaw mwrw bqxp sqcj'
 SMS_GATEWAY = 'smart.com.ph'
 
 app = Flask(__name__)
+
+# Enable CORS for all routes
+CORS(app)
 
 db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'attendance.db'))
 print(f"Using database file at: {db_path}")
