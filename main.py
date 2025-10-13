@@ -11,7 +11,7 @@ import requests
 import json
 
 # Replace with your Flask app URL
-BASE_URL = 'http://localhost:5000'
+BASE_URL = 'https://web-production-b8c90.up.railway.app'
 
 class LoginScreen(Screen):
     def __init__(self, **kwargs):
