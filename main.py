@@ -97,7 +97,8 @@ class RegisterScreen(Screen):
             return
         response = requests.get(f'{BASE_URL}/api/search_students?q={value}')
         if response.status_code == 200:
-            students = response.json()
+            data = response.json()
+            students = data.get('students', [])
             for student in students:
                 btn = Button(text=f"{student['name']} (Grade {student['grade_level']}, Section {student['section_name']})",
                            size_hint_y=None, height=40)
