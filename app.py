@@ -153,7 +153,8 @@ def parent_register():
         flash('Registration successful! Please login.')
         return redirect(url_for('login'))
 
-    return render_template('parent_register.html')
+    students = Student.query.all()
+    return render_template('parent_register.html', students=students)
 
 @app.route('/logout')
 @login_required
