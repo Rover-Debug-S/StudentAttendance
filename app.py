@@ -13,8 +13,8 @@ import smtplib
 from email.mime.text import MIMEText
 
 # Email and SMS configuration
-EMAIL_USER = 'jafflusica48@gmail.com'
-EMAIL_PASS = 'wnaw mwrw bqxp sqcj'
+EMAIL_USER = os.environ.get('EMAIL_USER', 'default@example.com')
+EMAIL_PASS = os.environ.get('EMAIL_PASS', 'default_pass')
 SMS_GATEWAY = 'smart.com.ph'
 
 app = Flask(__name__)
