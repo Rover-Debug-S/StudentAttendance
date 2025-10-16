@@ -69,11 +69,14 @@ class RegisterScreen(Screen):
         self.mobile_input = TextInput(hint_text='Mobile Number')
         layout.add_widget(self.mobile_input)
 
+        self.email_input = TextInput(hint_text='Email')
+        layout.add_widget(self.email_input)
+
         self.student_name_input = TextInput(hint_text='Child\'s Name')
         layout.add_widget(self.student_name_input)
 
         self.student_id = None
-        self.student_suggestions = ScrollView()
+        self.student_suggestions = ScrollView(size_hint_y=None, height=100)
         self.suggestions_layout = BoxLayout(orientation='vertical', size_hint_y=None)
         self.suggestions_layout.bind(minimum_height=self.suggestions_layout.setter('height'))
         self.student_suggestions.add_widget(self.suggestions_layout)
@@ -95,15 +98,23 @@ class RegisterScreen(Screen):
         self.suggestions_layout.clear_widgets()
         if len(value) < 2:
             return
-        response = requests.get(f'{BASE_URL}/api/search_students?q={value}')
-        if response.status_code == 200:
-            data = response.json()
-            students = data.get('students', [])
-            for student in students:
-                btn = Button(text=f"{student['name']} (Grade {student['grade_level']}, Section {student['section_name']})",
-                           size_hint_y=None, height=40)
-                btn.bind(on_press=lambda x, s=student: self.select_student(s))
-                self.suggestions_layout.add_widget(btn)
+        try:
+            response = requests.get(f'{BASE_URL}/api/search_students?q={value}')
+            print(f"API Response Status: {response.status_code}")
+            print(f"API Response: {response.text}")
+            if response.status_code == 200:
+                data = response.json()
+                students = data.get('students', [])
+                print(f"Found {len(students)} students")
+                for student in students:
+                    btn = Button(text=f"{student['name']} (Grade {student['grade_level']}, Section {student['section_name']})",
+                               size_hint_y=None, height=40)
+                    btn.bind(on_press=lambda x, s=student: self.select_student(s))
+                    self.suggestions_layout.add_widget(btn)
+            else:
+                print(f"API Error: {response.text}")
+        except Exception as e:
+            print(f"Request error: {e}")
 
     def select_student(self, student):
         self.student_name_input.text = student['name']
@@ -115,6 +126,7 @@ class RegisterScreen(Screen):
         password = self.password_input.text
         confirm_password = self.confirm_password_input.text
         mobile = self.mobile_input.text
+        email = self.email_input.text
 
         if password != confirm_password:
             print('Passwords do not match')
@@ -128,8 +140,10 @@ class RegisterScreen(Screen):
             'username': username,
             'password': password,
             'mobile': mobile,
+            'email': email,
             'student_id': self.student_id
         })
+        print(f"Registration Response: {response.status_code} - {response.text}")
         if response.status_code == 201:
             print('Registration successful')
             self.manager.current = 'login'
