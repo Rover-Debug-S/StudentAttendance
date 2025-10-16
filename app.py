@@ -211,11 +211,88 @@ def api_search_students():
         })
     return {'students': results}
 
-@app.route('/api/parent_attendance/<int:user_id>')
-def api_parent_attendance(user_id):
-    user = User.query.get(user_id)
+
+@app.route('/api/parent_login', methods=['POST'])
+def api_parent_login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    user = User.query.filter_by(username=username, role='parent').first()
+    if user and check_password_hash(user.password, password):
+        return jsonify({'parent_id': user.id}), 200
+    else:
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+
+@app.route('/api/parent_register', methods=['POST'])
+def api_parent_register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    mobile = data.get('mobile')
+    email = data.get('email')
+    student_id = data.get('student_id')
+    
+    if not all([username, password, mobile, email, student_id]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    if User.query.filter_by(username=username).first():
+        return jsonify({'error': 'Username already exists'}), 400
+    
+    hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+    new_parent = User(
+        username=username, 
+        password=hashed_password, 
+        role='parent', 
+        student_id=student_id, 
+        mobile=mobile, 
+        email=email
+    )
+    db.session.add(new_parent)
+    db.session.commit()
+    
+    return jsonify({'message': 'Registration successful'}), 201
+
+
+@app.route('/api/parent_dashboard/<int:parent_id>', methods=['GET'])
+def api_parent_dashboard(parent_id):
+    user = User.query.get(parent_id)
     if not user or user.role != 'parent':
-        return {'error': 'User not found'}, 404
+        return jsonify({'error': 'User not found'}), 404
+    
+    student = Student.query.get(user.student_id)
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    
+    return jsonify({
+        'student_name': student.name,
+        'mobile': user.mobile,
+        'email': user.email
+    }), 200
+
+
+@app.route('/api/update_mobile/<int:parent_id>', methods=['POST'])
+def api_update_mobile(parent_id):
+    data = request.get_json()
+    mobile = data.get('mobile')
+    
+    user = User.query.get(parent_id)
+    if not user or user.role != 'parent':
+        return jsonify({'error': 'User not found'}), 404
+    
+    user.mobile = mobile
+    db.session.commit()
+    
+    return jsonify({'message': 'Mobile updated successfully'}), 200
+
+
+@app.route('/api/parent_attendance/<int:parent_id>', methods=['GET'])
+def api_parent_attendance(parent_id):
+    user = User.query.get(parent_id)
+    if not user or user.role != 'parent':
+        return jsonify({'error': 'User not found'}), 404
+    
     attendances = Attendance.query.filter_by(student_id=user.student_id).all()
     results = []
     for attendance in attendances:
@@ -223,7 +300,9 @@ def api_parent_attendance(user_id):
             'date': attendance.date.strftime('%Y-%m-%d'),
             'status': attendance.status
         })
-    return results, 200
+    return jsonify(results), 200
+
+
 
 def send_notification(parent, message):
     """Send notification to parent via SMS and email if available"""

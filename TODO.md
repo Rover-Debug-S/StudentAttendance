@@ -11,7 +11,7 @@
 - [x] Update notification sending logic to send to both email and mobile if available
 - [x] Add update_contact route in app.py
 - [x] Update parent_dashboard.html to show email and link to update contact
-- [ ] Test parent registration with email
-- [ ] Test notification sending to both email and mobile
+- [x] Test parent registration with email
+- [x] Test notification sending to both email and mobile
 - [x] Handle database schema change (adding email column)
 - [x] Fix Railway deployment issues (explicit endpoint naming)
