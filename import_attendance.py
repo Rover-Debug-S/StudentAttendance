@@ -185,14 +185,8 @@ def import_attendance_from_excel(file_path, sheet_name=None):
 
 if __name__ == "__main__":
     # Path to the Excel file
-    excel_file = r"C:\Users\Windows 10\Desktop\Research Attendance.xlsx"
+    excel_file = "Attendance.xlsx"
 
-    # Import students from sheet 6 (assuming it's the 6th sheet, index 5)
-    xl = pd.ExcelFile(excel_file)
-    if len(xl.sheet_names) >= 6:
-        sheet_6_name = xl.sheet_names[5]  # 0-indexed, so 5 is the 6th sheet
-        print(f"Importing students from sheet '{sheet_6_name}' (sheet 6)")
-        import_students_from_excel(excel_file, sheet_name=sheet_6_name)
-    else:
-        print(f"Excel file only has {len(xl.sheet_names)} sheets, importing from first sheet")
-        import_students_from_excel(excel_file)
+    # Import attendance from the Excel file
+    print(f"Importing attendance from {excel_file}")
+    import_attendance_from_excel(excel_file)
