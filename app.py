@@ -58,7 +58,7 @@ def create_default_host():
         db.session.commit()
 
 def import_students_from_excel():
-    """Import student data from Excel file on Railway"""
+    """Import student data and attendance records from Excel file on Railway"""
     try:
         excel_file = os.path.join(os.path.dirname(__file__), 'Research Attendance.xlsx')
         if not os.path.exists(excel_file):
@@ -74,13 +74,29 @@ def import_students_from_excel():
             print("No sheets found in Excel file")
             return
 
-        print(f"Importing students from Excel file: {excel_file}")
+        print(f"Importing students and attendance from Excel file: {excel_file}")
         print(f"Sheet: {sheet_name}")
         print(f"Columns found: {list(df.columns)}")
         print(f"Number of rows: {len(df)}")
 
-        imported_count = 0
-        skipped_count = 0
+        imported_students = 0
+        skipped_students = 0
+        imported_attendances = 0
+
+        # Identify date columns (columns that look like dates)
+        date_columns = []
+        for col in df.columns:
+            col_str = str(col).strip()
+            # Check if column name looks like a date (YYYY-MM-DD or MM/DD/YYYY format)
+            if '/' in col_str or '-' in col_str:
+                try:
+                    # Try to parse as date
+                    pd.to_datetime(col_str)
+                    date_columns.append(col)
+                except:
+                    continue
+
+        print(f"Date columns identified: {date_columns}")
 
         for index, row in df.iterrows():
             # Extract student name and grade/section
@@ -88,7 +104,7 @@ def import_students_from_excel():
             grade_section = str(row.get('Grade And Section', row.get('Grade_Section', ''))).strip()
 
             if not student_name or not grade_section:
-                skipped_count += 1
+                skipped_students += 1
                 continue
 
             # Parse grade and section
@@ -103,10 +119,10 @@ def import_students_from_excel():
                     grade = int(grade_part.strip())
                     section_name = section_part.strip()
                 else:
-                    skipped_count += 1
+                    skipped_students += 1
                     continue
             except Exception as e:
-                skipped_count += 1
+                skipped_students += 1
                 continue
 
             # Find or create section
@@ -116,22 +132,52 @@ def import_students_from_excel():
                 db.session.add(section)
                 db.session.flush()  # Get the ID
 
-            # Check if student already exists
-            existing_student = Student.query.filter_by(name=student_name).first()
-            if existing_student:
-                skipped_count += 1
-                continue
+            # Find or create student
+            student = Student.query.filter_by(name=student_name).first()
+            if not student:
+                student = Student(name=student_name, grade_level=grade, section_id=section.id)
+                db.session.add(student)
+                db.session.flush()
+                imported_students += 1
+            else:
+                # Update student's section if needed
+                if student.section_id != section.id:
+                    student.section_id = section.id
 
-            # Create student
-            student = Student(name=student_name, grade_level=grade, section_id=section.id)
-            db.session.add(student)
-            imported_count += 1
+            # Import attendance records for this student
+            for date_col in date_columns:
+                attendance_value = str(row.get(date_col, '')).strip().lower()
+                if attendance_value in ['present', 'absent', 'tardy', 'late']:
+                    try:
+                        attendance_date = pd.to_datetime(date_col).date()
+                        # Check if attendance already exists
+                        existing_attendance = Attendance.query.filter_by(
+                            student_id=student.id,
+                            date=attendance_date
+                        ).first()
+
+                        if existing_attendance:
+                            existing_attendance.status = attendance_value
+                        else:
+                            new_attendance = Attendance(
+                                student_id=student.id,
+                                date=attendance_date,
+                                status=attendance_value
+                            )
+                            db.session.add(new_attendance)
+                        imported_attendances += 1
+                    except Exception as e:
+                        print(f"Error importing attendance for {student_name} on {date_col}: {e}")
+                        continue
 
         db.session.commit()
-        print(f"Import completed! Imported: {imported_count}, Skipped: {skipped_count}")
+        print(f"Import completed! Students - Imported: {imported_students}, Skipped: {skipped_students}")
+        print(f"Attendance records imported: {imported_attendances}")
 
     except Exception as e:
-        print(f"Error importing students: {e}")
+        print(f"Error importing data: {e}")
+        import traceback
+        traceback.print_exc()
 
 def create_default_data():
     """Create default students, sections, and parents for testing"""
@@ -658,7 +704,149 @@ def attendance_report():
         query = query.filter_by(section_id=int(request.args.get('section')))
     students = query.all()
     report_data = []
-    for student in students:
+ails
+Build Logs
+Deploy Logs
+HTTP Logs
+Filter and search logs
+
+You reached the start of the range
+Dec 13, 2025, 1:05 PM
+Starting Container
+Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8791 kB]
+Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [290 kB]
+Fetched 9343 kB in 1s (8390 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  fontconfig-config fonts-dejavu-core krb5-locales libabsl20220623 libaom3
+  libavif15 libbrotli1 libbsd0 libc-dev-bin libc-devtools libc6-dev
+  libcrypt-dev libdav1d6 libde265-0 libdeflate0 libexpat1 libfontconfig1
+  libfreetype6 libgav1-1 libgd3 libgssapi-krb5-2 libheif1 libjbig0
+  libjpeg62-turbo libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblerc4
+  libnsl-dev libnsl2 libnuma1 libpng16-16 librav1e0 libreadline8 libsqlite3-0
+  libsvtav1enc1 libtiff6 libtirpc-common libtirpc-dev libtirpc3 libwebp7
+  libx11-6 libx11-data libx265-199 libxau6 libxcb1 libxdmcp6 libxpm4 libyuv0
+  linux-libc-dev manpages manpages-dev readline-common rpcsvc-proto
+Suggested packages:
+  glibc-doc libgd-tools krb5-doc krb5-user sqlite3-doc man-browser
+  readline-doc
+The following NEW packages will be installed:
+  fontconfig-config fonts-dejavu-core krb5-locales libabsl20220623 libaom3
+  libavif15 libbrotli1 libbsd0 libc-dev-bin libc-devtools libc6-dev
+  libcrypt-dev libdav1d6 libde265-0 libdeflate0 libexpat1 libfontconfig1
+  libfreetype6 libgav1-1 libgd3 libgssapi-krb5-2 libheif1 libjbig0
+  libjpeg62-turbo libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblerc4
+  libnsl-dev libnsl2 libnuma1 libpng16-16 librav1e0 libreadline8 libsqlite3-0
+  libsqlite3-dev libsvtav1enc1 libtiff6 libtirpc-common libtirpc-dev libtirpc3
+  libwebp7 libx11-6 libx11-data libx265-199 libxau6 libxcb1 libxdmcp6 libxpm4
+  libyuv0 linux-libc-dev manpages manpages-dev readline-common rpcsvc-proto
+  sqlite3
+0 upgraded, 57 newly installed, 0 to remove and 0 not upgraded.
+Need to get 24.4 MB of archives.
+After this operation, 87.9 MB of additional disk space will be used.
+Get:1 http://deb.debian.org/debian bookworm/main amd64 readline-common all 8.2-1.3 [69.0 kB]
+Get:2 http://deb.debian.org/debian bookworm/main amd64 krb5-locales all 1.20.1-2+deb12u4 [63.4 kB]
+Get:3 http://deb.debian.org/debian bookworm/main amd64 manpages all 6.03-2 [1332 kB]
+Get:4 http://deb.debian.org/debian bookworm/main amd64 fonts-dejavu-core all 2.37-6 [1068 kB]
+Get:5 http://deb.debian.org/debian bookworm/main amd64 fontconfig-config amd64 2.14.1-4 [315 kB]
+Get:6 http://deb.debian.org/debian bookworm/main amd64 libabsl20220623 amd64 20220623.1-1+deb12u2 [391 kB]
+Get:7 http://deb.debian.org/debian bookworm/main amd64 libaom3 amd64 3.6.0-1+deb12u2 [1850 kB]
+Get:8 http://deb.debian.org/debian bookworm/main amd64 libdav1d6 amd64 1.0.0-2+deb12u1 [513 kB]
+Get:9 http://deb.debian.org/debian bookworm/main amd64 libgav1-1 amd64 0.18.0-1+b1 [332 kB]
+Get:10 http://deb.debian.org/debian bookworm/main amd64 librav1e0 amd64 0.5.1-6 [763 kB]
+Get:11 http://deb.debian.org/debian bookworm/main amd64 libsvtav1enc1 amd64 1.4.1+dfsg-1 [2121 kB]
+Get:12 http://deb.debian.org/debian bookworm/main amd64 libjpeg62-turbo amd64 1:2.1.5-2 [166 kB]
+Get:13 http://deb.debian.org/debian bookworm/main amd64 libyuv0 amd64 0.0~git20230123.b2528b0-1 [168 kB]
+Get:14 http://deb.debian.org/debian bookworm/main amd64 libavif15 amd64 0.11.1-1+deb12u1 [94.4 kB]
+Get:15 http://deb.debian.org/debian bookworm/main amd64 libbrotli1 amd64 1.0.9-2+b6 [275 kB]
+Get:16 http://deb.debian.org/debian bookworm/main amd64 libbsd0 amd64 0.11.7-2 [117 kB]
+Get:17 http://deb.debian.org/debian bookworm/main amd64 libc-dev-bin amd64 2.36-9+deb12u13 [47.4 kB]
+Get:18 http://deb.debian.org/debian bookworm/main amd64 libexpat1 amd64 2.5.0-1+deb12u2 [99.9 kB]
+Get:19 http://deb.debian.org/debian-security bookworm-security/main amd64 libpng16-16 amd64 1.6.39-2+deb12u1 [276 kB]
+Get:20 http://deb.debian.org/debian bookworm/main amd64 libfreetype6 amd64 2.12.1+dfsg-5+deb12u4 [398 kB]
+Get:21 http://deb.debian.org/debian bookworm/main amd64 libfontconfig1 amd64 2.14.1-4 [386 kB]
+Get:22 http://deb.debian.org/debian bookworm/main amd64 libde265-0 amd64 1.0.11-1+deb12u2 [185 kB]
+Get:23 http://deb.debian.org/debian bookworm/main amd64 libnuma1 amd64 2.0.16-1 [21.0 kB]
+Get:35 http://deb.debian.org/debian bookworm/main amd64 libx11-6 amd64 2:1.8.4-2+deb12u2 [760 kB]
+Get:36 http://deb.debian.org/debian bookworm/main amd64 libxpm4 amd64 1:3.5.12-1.1+deb12u1 [48.6 kB]
+Get:37 http://deb.debian.org/debian bookworm/main amd64 libgd3 amd64 2.3.3-9 [124 kB]
+Get:38 http://deb.debian.org/debian bookworm/main amd64 libc-devtools amd64 2.36-9+deb12u13 [55.0 kB]
+Get:24 http://deb.debian.org/debian bookworm/main amd64 libx265-199 amd64 3.5-2+b1 [1150 kB]
+Get:25 http://deb.debian.org/debian bookworm/main amd64 libheif1 amd64 1.15.1-1+deb12u1 [215 kB]
+Get:26 http://deb.debian.org/debian bookworm/main amd64 libdeflate0 amd64 1.14-1 [61.4 kB]
+Get:27 http://deb.debian.org/debian bookworm/main amd64 libjbig0 amd64 2.1-6.1 [31.7 kB]
+Get:28 http://deb.debian.org/debian bookworm/main amd64 liblerc4 amd64 4.0.0+ds-2 [170 kB]
+Get:29 http://deb.debian.org/debian bookworm/main amd64 libwebp7 amd64 1.2.4-0.2+deb12u1 [286 kB]
+Get:30 http://deb.debian.org/debian-security bookworm-security/main amd64 libtiff6 amd64 4.5.0-6+deb12u3 [316 kB]
+Get:31 http://deb.debian.org/debian bookworm/main amd64 libxau6 amd64 1:1.0.9-1 [19.7 kB]
+Get:32 http://deb.debian.org/debian bookworm/main amd64 libxdmcp6 amd64 1:1.1.2-3 [26.3 kB]
+Get:33 http://deb.debian.org/debian bookworm/main amd64 libxcb1 amd64 1.15-1 [144 kB]
+Get:34 http://deb.debian.org/debian bookworm/main amd64 libx11-data all 2:1.8.4-2+deb12u2 [292 kB]
+Get:39 http://deb.debian.org/debian-security bookworm-security/main amd64 linux-libc-dev amd64 6.1.158-1 [2204 kB]
+Get:40 http://deb.debian.org/debian bookworm/main amd64 libcrypt-dev amd64 1:4.4.33-2 [118 kB]
+Get:41 http://deb.debian.org/debian bookworm/main amd64 libkrb5support0 amd64 1.20.1-2+deb12u4 [33.2 kB]
+Get:42 http://deb.debian.org/debian bookworm/main amd64 libk5crypto3 amd64 1.20.1-2+deb12u4 [79.8 kB]
+Get:43 http://deb.debian.org/debian bookworm/main amd64 libkeyutils1 amd64 1.6.3-2 [8808 B]
+Get:44 http://deb.debian.org/debian bookworm/main amd64 libkrb5-3 amd64 1.20.1-2+deb12u4 [334 kB]
+Get:45 http://deb.debian.org/debian bookworm/main amd64 libgssapi-krb5-2 amd64 1.20.1-2+deb12u4 [135 kB]
+Get:46 http://deb.debian.org/debian bookworm/main amd64 libtirpc-common all 1.3.3+ds-1 [14.0 kB]
+Get:47 http://deb.debian.org/debian bookworm/main amd64 libtirpc3 amd64 1.3.3+ds-1 [85.2 kB]
+Get:48 http://deb.debian.org/debian bookworm/main amd64 libnsl2 amd64 1.3.0-2 [39.5 kB]
+Get:49 http://deb.debian.org/debian bookworm/main amd64 libtirpc-dev amd64 1.3.3+ds-1 [191 kB]
+Get:50 http://deb.debian.org/debian bookworm/main amd64 libnsl-dev amd64 1.3.0-2 [66.4 kB]
+Get:51 http://deb.debian.org/debian bookworm/main amd64 rpcsvc-proto amd64 1.4.3-1 [63.3 kB]
+Get:52 http://deb.debian.org/debian bookworm/main amd64 libc6-dev amd64 2.36-9+deb12u13 [1904 kB]
+Get:53 http://deb.debian.org/debian bookworm/main amd64 libreadline8 amd64 8.2-1.3 [166 kB]
+Get:54 http://deb.debian.org/debian bookworm/main amd64 libsqlite3-0 amd64 3.40.1-2+deb12u2 [839 kB]
+Get:55 http://deb.debian.org/debian bookworm/main amd64 libsqlite3-dev amd64 3.40.1-2+deb12u2 [1025 kB]
+Get:56 http://deb.debian.org/debian bookworm/main amd64 manpages-dev all 6.03-2 [2030 kB]
+Get:57 http://deb.debian.org/debian bookworm/main amd64 sqlite3 amd64 3.40.1-2+deb12u2 [353 kB]
+debconf: delaying package configuration, since apt-utils is not installed
+Fetched 24.4 MB in 0s (68.3 MB/s)
+Selecting previously unselected package readline-common.
+(Reading database ... 
+(Reading database ... 5%
+(Reading database ... 10%
+(Reading database ... 15%
+(Reading database ... 20%
+(Reading database ... 25%
+(Reading database ... 30%
+(Reading database ... 35%
+(Reading database ... 40%
+(Reading database ... 45%
+(Reading database ... 50%
+(Reading database ... 55%
+(Reading database ... 60%
+(Reading database ... 65%
+(Reading database ... 70%
+(Reading database ... 75%
+(Reading database ... 80%
+(Reading database ... 85%
+(Reading database ... 90%
+(Reading database ... 95%
+(Reading database ... 100%
+(Reading database ... 6622 files and directories currently installed.)
+Preparing to unpack .../00-readline-common_8.2-1.3_all.deb ...
+Unpacking readline-common (8.2-1.3) ...
+Selecting previously unselected package krb5-locales.
+Preparing to unpack .../01-krb5-locales_1.20.1-2+deb12u4_all.deb ...
+Unpacking krb5-locales (1.20.1-2+deb12u4) ...
+Selecting previously unselected package manpages.
+Preparing to unpack .../02-manpages_6.03-2_all.deb ...
+Unpacking manpages (6.03-2) ...
+Selecting previously unselected package fonts-dejavu-core.
+Preparing to unpack .../03-fonts-dejavu-core_2.37-6_all.deb ...
+Unpacking fonts-dejavu-core (2.37-6) ...
+Selecting previously unselected package fontconfig-config.
+Preparing to unpack .../04-fontconfig-config_2.14.1-4_amd64.deb ...
+Unpacking fontconfig-config (2.14.1-4) ...    for student in students:
         attendances = Attendance.query.filter_by(student_id=student.id).all()
         total_days = len(attendances)
         present_days = len([a for a in attendances if a.status == 'present'])
