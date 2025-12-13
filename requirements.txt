@@ -9,3 +9,5 @@ werkzeug
 pytesseract
 pillow
 gunicorn
+pandas
+openpyxl
