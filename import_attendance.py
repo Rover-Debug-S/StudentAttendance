@@ -94,7 +94,7 @@ def import_students_from_excel(file_path, sheet_name=None):
         print(f"Error importing students: {e}")
 
 def import_attendance_from_excel(file_path, sheet_name=None):
-    """Import attendance data from Excel file"""
+    """Import attendance data from Excel file with pivot table format"""
     try:
         # Read the Excel file
         if sheet_name:
@@ -108,26 +108,18 @@ def import_attendance_from_excel(file_path, sheet_name=None):
         print(f"Columns found: {list(df.columns)}")
         print(f"Number of rows: {len(df)}")
 
-        # Assuming columns are: Student Name, Date, Status
-        # Adjust column names if different
-        student_col = 'Student Name'  # Adjust if different
-        date_col = 'Date'  # Adjust if different
-        status_col = 'Status'  # Adjust if different
-
-        if student_col not in df.columns or date_col not in df.columns or status_col not in df.columns:
-            print("Expected columns not found. Available columns:")
-            for col in df.columns:
-                print(f"  - {col}")
-            return
-
         with app.app_context():
             imported_count = 0
             skipped_count = 0
 
+            # Get the date headers from the first row (skip the first column which is "NAME:")
+            date_headers = df.columns[1:]  # Skip first column
+
             for index, row in df.iterrows():
-                student_name = str(row[student_col]).strip()
-                date_str = str(row[date_col]).strip()
-                status_code = row[status_col]
+                if index == 0:
+                    continue  # Skip header row
+
+                student_name = str(row.iloc[0]).strip()  # First column is student name
 
                 # Find student by name
                 student = Student.query.filter_by(name=student_name).first()
@@ -136,47 +128,52 @@ def import_attendance_from_excel(file_path, sheet_name=None):
                     skipped_count += 1
                     continue
 
-                # Parse date
-                try:
-                    if isinstance(date_str, str):
-                        # Try different date formats
-                        for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%Y/%m/%d %H:%M:%S']:
-                            try:
-                                date = datetime.strptime(date_str, fmt).date()
-                                break
-                            except ValueError:
-                                continue
+                # Process each date column
+                for col_idx, date_header in enumerate(date_headers, 1):  # Start from 1 to skip name column
+                    date_str = str(date_header).strip()
+                    status_code = row.iloc[col_idx]
+
+                    # Skip if status is NaN or empty
+                    if pd.isna(status_code) or str(status_code).strip() == '':
+                        continue
+
+                    # Parse date from header
+                    try:
+                        # Extract date from string like "2025-10-01 00:00:00"
+                        if ' ' in date_str:
+                            date_part = date_str.split(' ')[0]
+                            date = datetime.strptime(date_part, '%Y-%m-%d').date()
                         else:
-                            print(f"Could not parse date '{date_str}' for student '{student_name}', skipping...")
-                            skipped_count += 1
-                            continue
+                            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    except Exception as e:
+                        print(f"Error parsing date '{date_str}' for student '{student_name}': {e}, skipping...")
+                        continue
+
+                    # Convert status_code to int if it's not already
+                    try:
+                        status_code = int(status_code)
+                    except (ValueError, TypeError):
+                        print(f"Invalid status code '{status_code}' for student '{student_name}' on {date}, skipping...")
+                        continue
+
+                    # Map status code to string
+                    if status_code not in STATUS_MAPPING:
+                        print(f"Invalid status code '{status_code}' for student '{student_name}' on {date}, skipping...")
+                        continue
+
+                    status = STATUS_MAPPING[status_code]
+
+                    # Check if attendance already exists
+                    existing = Attendance.query.filter_by(student_id=student.id, date=date).first()
+                    if existing:
+                        existing.status = status
+                        print(f"Updated attendance for {student_name} on {date}: {status}")
                     else:
-                        # If it's already a date object
-                        date = date_str.date() if hasattr(date_str, 'date') else date_str
-                except Exception as e:
-                    print(f"Error parsing date '{date_str}' for student '{student_name}': {e}, skipping...")
-                    skipped_count += 1
-                    continue
+                        attendance = Attendance(student_id=student.id, date=date, status=status)
+                        db.session.add(attendance)
+                        print(f"Added attendance for {student_name} on {date}: {status}")
 
-                # Map status code to string
-                if status_code not in STATUS_MAPPING:
-                    print(f"Invalid status code '{status_code}' for student '{student_name}', skipping...")
-                    skipped_count += 1
-                    continue
-
-                status = STATUS_MAPPING[status_code]
-
-                # Check if attendance already exists
-                existing = Attendance.query.filter_by(student_id=student.id, date=date).first()
-                if existing:
-                    existing.status = status
-                    print(f"Updated attendance for {student_name} on {date}: {status}")
-                else:
-                    attendance = Attendance(student_id=student.id, date=date, status=status)
-                    db.session.add(attendance)
-                    print(f"Added attendance for {student_name} on {date}: {status}")
-
-                imported_count += 1
+                    imported_count += 1
 
             db.session.commit()
             print(f"\nImport completed!")
