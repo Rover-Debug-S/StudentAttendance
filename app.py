@@ -11,6 +11,8 @@ import os
 from sqlalchemy.orm import joinedload
 import smtplib
 from email.mime.text import MIMEText
+import pandas as pd
+from datetime import datetime
 
 # Email and SMS configuration
 EMAIL_USER = os.environ.get('EMAIL_USER', 'default@example.com')
@@ -55,9 +57,89 @@ def create_default_host():
         db.session.add(host)
         db.session.commit()
 
+def import_students_from_excel():
+    """Import student data from Excel file on Railway"""
+    try:
+        excel_file = os.path.join(os.path.dirname(__file__), 'Research Attendance.xlsx')
+        if not os.path.exists(excel_file):
+            print("Excel file not found, skipping import")
+            return
+
+        # Read the Excel file
+        xl = pd.ExcelFile(excel_file)
+        if len(xl.sheet_names) >= 1:
+            sheet_name = xl.sheet_names[0]  # Use first sheet
+            df = pd.read_excel(excel_file, sheet_name=sheet_name)
+        else:
+            print("No sheets found in Excel file")
+            return
+
+        print(f"Importing students from Excel file: {excel_file}")
+        print(f"Sheet: {sheet_name}")
+        print(f"Columns found: {list(df.columns)}")
+        print(f"Number of rows: {len(df)}")
+
+        imported_count = 0
+        skipped_count = 0
+
+        for index, row in df.iterrows():
+            # Extract student name and grade/section
+            student_name = str(row.get('Name Of Student', row.get('Student Name', ''))).strip()
+            grade_section = str(row.get('Grade And Section', row.get('Grade_Section', ''))).strip()
+
+            if not student_name or not grade_section:
+                skipped_count += 1
+                continue
+
+            # Parse grade and section
+            try:
+                # Assuming format like "Grade 7 - Section A" or "7-A"
+                if ' - ' in grade_section:
+                    grade_part, section_part = grade_section.split(' - ', 1)
+                    grade = int(''.join(filter(str.isdigit, grade_part)))
+                    section_name = section_part.strip()
+                elif '-' in grade_section:
+                    grade_part, section_part = grade_section.split('-', 1)
+                    grade = int(grade_part.strip())
+                    section_name = section_part.strip()
+                else:
+                    skipped_count += 1
+                    continue
+            except Exception as e:
+                skipped_count += 1
+                continue
+
+            # Find or create section
+            section = Section.query.filter_by(name=section_name, grade_level=grade).first()
+            if not section:
+                section = Section(name=section_name, grade_level=grade)
+                db.session.add(section)
+                db.session.flush()  # Get the ID
+
+            # Check if student already exists
+            existing_student = Student.query.filter_by(name=student_name).first()
+            if existing_student:
+                skipped_count += 1
+                continue
+
+            # Create student
+            student = Student(name=student_name, grade_level=grade, section_id=section.id)
+            db.session.add(student)
+            imported_count += 1
+
+        db.session.commit()
+        print(f"Import completed! Imported: {imported_count}, Skipped: {skipped_count}")
+
+    except Exception as e:
+        print(f"Error importing students: {e}")
+
 def create_default_data():
     """Create default students, sections, and parents for testing"""
-    # Create sections
+    # First, try to import from Excel file
+    if Student.query.count() == 0:
+        import_students_from_excel()
+
+    # Create sections if none exist
     if Section.query.count() == 0:
         section1 = Section(name='A', grade_level=1)
         section2 = Section(name='B', grade_level=1)
@@ -65,7 +147,7 @@ def create_default_data():
         db.session.add(section2)
         db.session.commit()
 
-    # Create students
+    # Create default students if none exist
     if Student.query.count() == 0:
         students_data = [
             ('John Doe', 1, 1),
