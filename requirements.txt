@@ -3,7 +3,6 @@ Flask-SQLAlchemy
 Flask-Login
 Flask-CORS
 twilio
-kivy
 requests
 werkzeug
 pytesseract
@@ -11,3 +10,4 @@ pillow
 gunicorn
 pandas
 openpyxl
+psycopg2-binary
